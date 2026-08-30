@@ -20,7 +20,8 @@
         .player-header { background: #252525; padding: 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; user-select: none; }
         .player-content { padding: 15px; background: #161616; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95em; min-width: 500px; }
         th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
         th { background: #222; color: var(--accent); }
         .badge { background: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; }
