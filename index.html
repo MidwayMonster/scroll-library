@@ -109,9 +109,9 @@
             <div style="display: flex; align-items: center; gap: 15px;">
                 <label style="font-size: 0.9em; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                     <input type="checkbox" id="toggleConsumedView" onchange="renderInventory()" style="margin:0; width:auto;"> 
-                    :eye: Show Spent History
+                    👀 Show Spent History
                 </label>
-                <button onclick="fetchData()" style="font-size:0.8em; background:#333; margin:0;">:arrows_counterclockwise: Refresh Data</button>
+                <button onclick="fetchData()" style="font-size:0.8em; background:#333; margin:0;">🔄 Refresh Data</button>
             </div>
         </div>
         <div id="playerRoster">Loading ledger records...</div>
@@ -289,7 +289,7 @@
             // Assemble the final collapsible card view
             let combinedContent = activeHTML;
             if (showConsumed && consumedHTML !== "") {
-                combinedContent += `<h4 style="color:#ff6b6b; margin-top:25px; border-bottom:1px dashed #444; padding-bottom:5px;">:scroll: Spent Magic Archive</h4>` + consumedHTML;
+                combinedContent += `<h4 style="color:#ff6b6b; margin-top:25px; border-bottom:1px dashed #444; padding-bottom:5px;">📜 Spent Magic Archive</h4>` + consumedHTML;
             }
 
             if (combinedContent === "") {
@@ -298,7 +298,7 @@
 
             playerCard.innerHTML = `
                 <div class="player-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    <span>:bust_in_silhouette: ${player}</span>
+                    <span>👤 ${player}</span>
                     <span><span class="badge" style="background:var(--accent);">${totalActiveScrolls} Active Scrolls</span> ▾</span>
                 </div>
                 <div class="player-content hidden">
