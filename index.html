@@ -102,13 +102,19 @@
     </div>
 
     <!-- Main Output / Filter Views -->
-    <div id="inventoryPanel" class="player-panel hidden">
-        <div style="display:flex; justify-content: space-between; align-items: center;">
-            <h3>Current Party Inventory</h3>
-            <button onclick="fetchData()" style="font-size:0.8em; background:#333;">🔄 Refresh Data</button>
-        </div>
-        <div id="playerRoster">Loading ledger records...</div>
-    </div>
+    <div id="inventoryPanel" class="player-panel hidden">
+        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h3>Current Party Inventory</h3>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <label style="font-size: 0.9em; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="toggleConsumedView" onchange="renderInventory()" style="margin:0; width:auto;"> 
+                    :eye: Show Spent History
+                </label>
+                <button onclick="fetchData()" style="font-size:0.8em; background:#333; margin:0;">:arrows_counterclockwise: Refresh Data</button>
+            </div>
+        </div>
+        <div id="playerRoster">Loading ledger records...</div>
+    </div>
 </div>
 
 <script>
@@ -161,84 +167,146 @@
     }
 
     function renderInventory() {
-        const roster = document.getElementById('playerRoster');
-        roster.innerHTML = "";
+        const roster = document.getElementById('playerRoster');
+        roster.innerHTML = "";
 
-        // Only present "Ready" status scrolls to the players view
-        const filtered = globalScrollsCache.filter(s => s.Status === "Ready");
-        const playerMap = {};
+        // Read the state of the toggle checkbox (default to false if not created yet)
+        const showConsumed = document.getElementById('toggleConsumedView')?.checked || false;
 
-        filtered.forEach(s => {
-            if (!playerMap[s.Holder]) playerMap[s.Holder] = {};
-            if (!playerMap[s.Holder][s.Spell]) playerMap[s.Holder][s.Spell] = [];
-            playerMap[s.Holder][s.Spell].push(s);
-        });
+        // Separate data based on toggle selection
+        const filtered = globalScrollsCache.filter(s => {
+            if (showConsumed) {
+                return s.Status === "Ready" || s.Status === "Consumed";
+            }
+            return s.Status === "Ready";
+        });
 
-        if (Object.keys(playerMap).length === 0) {
-            roster.innerHTML = "<p>No active magical scrolls found across party configurations.</p>";
-            return;
-        }
+        const playerMap = {};
 
-        for (let player in playerMap) {
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
+        filtered.forEach(s => {
+            if (!playerMap[s.Holder]) playerMap[s.Holder] = {};
+            if (!playerMap[s.Holder][s.Spell]) playerMap[s.Holder][s.Spell] = [];
+            playerMap[s.Holder][s.Spell].push(s);
+        });
 
-            let totalScrolls = 0;
-            let summaryHTML = "";
+        if (Object.keys(playerMap).length === 0) {
+            roster.innerHTML = "<p>No matching magical scrolls found across party configurations.</p>";
+            return;
+        }
 
-            for (let spell in playerMap[player]) {
-                const count = playerMap[player][spell].length;
-                totalScrolls += count;
-                const displayLevel = playerMap[player][spell][0]?.SpellLevel || '—';
-                
-                summaryHTML += `
-                    <div style="margin: 15px 0; border-top: 1px solid #333; padding-top:10px;">
-                        <strong style="color:#ba7fff; font-size:1.1em;">${spell}</strong> 
-                        <span class="lvl-badge">Lvl ${displayLevel}</span>
-                        <span class="badge" style="margin-left:5px;">${count} available</span>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Save DC</th>
-                                        <th>Attack Bonus</th>
-                                        <th>Casting Mod</th>
-                                        <th>Scribed By</th>
-                                        <th>Scribed Date</th>
-                                        ${currentRole === 'dm' ? '<th>Action</th>' : ''}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                `;
+        for (let player in playerMap) {
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
 
-                playerMap[player][spell].forEach(instance => {
-                    summaryHTML += `
-                        <tr>
-                            <td>${instance.SaveDC || '—'}</td>
-                            <td>${instance.AttackBonus || '—'}</td>
-                            <td>${instance.CastingModifier || '—'}</td>
-                            <td><span style="color:#aaa;">${instance.ScribedBy || 'Unknown'}</span></td>
-                            <td>${instance.CreatedDate || '—'}</td>
-                            ${currentRole === 'dm' ? `<td><button class="btn-consume" onclick="consumeScroll('${instance.ID}')">Mark Used</button></td>` : ''}
-                        </tr>
-                    `;
-                });
+            let totalActiveScrolls = 0;
+            let activeHTML = "";
+            let consumedHTML = "";
 
-                summaryHTML += `</tbody></table></div></div>`;
-            }
+            for (let spell in playerMap[player]) {
+                // Split the spell instances into separate active and consumed pools
+                const instances = playerMap[player][spell];
+                const activeInstances = instances.filter(i => i.Status === "Ready");
+                const consumedInstances = instances.filter(i => i.Status === "Consumed");
 
-            playerCard.innerHTML = `
-                <div class="player-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    <span>👤 ${player}</span>
-                    <span><span class="badge" style="background:var(--accent);">${totalScrolls} Total Scrolls</span> ▾</span>
-                </div>
-                <div class="player-content hidden">
-                    ${summaryHTML}
-                </div>
-            `;
-            roster.appendChild(playerCard);
-        }
-    }
+                totalActiveScrolls += activeInstances.length;
+
+                // 1. Build the Active Inventory Table if scrolls exist
+                if (activeInstances.length > 0) {
+                    activeHTML += `
+                        <div style="margin: 15px 0; border-top: 1px solid #333; padding-top:10px;">
+                            <strong style="color:#ba7fff; font-size:1.1em;">${spell}</strong> 
+                            <span class="lvl-badge">Lvl ${activeInstances[0]?.SpellLevel || '—'}</span>
+                            <span class="badge" style="margin-left:5px;">${activeInstances.length} available</span>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Save DC</th>
+                                            <th>Attack Bonus</th>
+                                            <th>Casting Mod</th>
+                                            <th>Scribed By</th>
+                                            <th>Scribed Date</th>
+                                            ${currentRole === 'dm' ? '<th>Action</th>' : ''}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    activeInstances.forEach(instance => {
+                        activeHTML += `
+                            <tr>
+                                <td>${instance.SaveDC || '—'}</td>
+                                <td>${instance.AttackBonus || '—'}</td>
+                                <td>${instance.CastingModifier || '—'}</td>
+                                <td><span style="color:#aaa;">${instance.ScribedBy || 'Unknown'}</span></td>
+                                <td>${instance.CreatedDate ? new Date(instance.CreatedDate).toLocaleDateString() : '—'}</td>
+                                ${currentRole === 'dm' ? `<td><button class="btn-consume" onclick="consumeScroll('${instance.ID}')">Mark Used</button></td>` : ''}
+                            </tr>
+                        `;
+                    });
+
+                    activeHTML += `</tbody></table></div></div>`;
+                }
+
+                // 2. Build the Consumed Archive Table if requested and entries exist
+                if (showConsumed && consumedInstances.length > 0) {
+                    consumedHTML += `
+                        <div style="margin: 15px 0; border-top: 1px solid #444; padding-top:10px; opacity: 0.65;">
+                            <strong style="color:#ff6b6b; font-size:1.1em; text-decoration: line-through;">${spell}</strong> 
+                            <span class="lvl-badge" style="background:#555;">Lvl ${consumedInstances[0]?.SpellLevel || '—'}</span>
+                            <span class="badge" style="background:#8b0000; margin-left:5px;">${consumedInstances.length} Used</span>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Save DC</th>
+                                            <th>Attack Bonus</th>
+                                            <th>Scribed By</th>
+                                            <th>Scribed Date</th>
+                                            <th>Consumed Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    consumedInstances.forEach(instance => {
+                        consumedHTML += `
+                            <tr>
+                                <td>${instance.SaveDC || '—'}</td>
+                                <td>${instance.AttackBonus || '—'}</td>
+                                <td>${instance.ScribedBy || 'Unknown'}</td>
+                                <td>${instance.CreatedDate ? new Date(instance.CreatedDate).toLocaleDateString() : '—'}</td>
+                                <td style="color:#ff6b6b; font-weight:bold;">${instance.ConsumedDate ? new Date(instance.ConsumedDate).toLocaleDateString() : '—'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    consumedHTML += `</tbody></table></div></div>`;
+                }
+            }
+
+            // Assemble the final collapsible card view
+            let combinedContent = activeHTML;
+            if (showConsumed && consumedHTML !== "") {
+                combinedContent += `<h4 style="color:#ff6b6b; margin-top:25px; border-bottom:1px dashed #444; padding-bottom:5px;">:scroll: Spent Magic Archive</h4>` + consumedHTML;
+            }
+
+            if (combinedContent === "") {
+                combinedContent = "<p style='color:#888; padding:10px;'>No active or consumed scrolls logged for this adventurer.</p>";
+            }
+
+            playerCard.innerHTML = `
+                <div class="player-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    <span>:bust_in_silhouette: ${player}</span>
+                    <span><span class="badge" style="background:var(--accent);">${totalActiveScrolls} Active Scrolls</span> ▾</span>
+                </div>
+                <div class="player-content hidden">
+                    ${combinedContent}
+                </div>
+            `;
+            roster.appendChild(playerCard);
+        }
+    }
 
     function renderWorkbench() {
         const tbody = document.getElementById('workbenchTableBody');
