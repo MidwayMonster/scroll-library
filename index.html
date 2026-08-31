@@ -75,6 +75,7 @@
             </select>
             
             <input type="number" id="initialHours" placeholder="Initial Hours Done" value="0" min="0">
+            <input type="number" id="totalHoursRequired" placeholder="Total Hours Required" value="8" min="1">
             
             <button type="submit" style="grid-column: 1 / -1; margin-top: 10px;">Log Manifestation</button>
         </form>
@@ -118,7 +119,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzz0O1T3kaLv62mY8lSKO2iH1FQsNekeQ3LRkZTEj53QWYCRt1DEC0sFiU3lZchLIbnYA/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycby53bA52CAEt7EVW6PGCXsYkQh08Hw0OX_pS4yfrex-1XLQyZEIUwernMEARjgEsrB5Iw/exec"; 
     let globalScrollsCache = [];
     let currentRole = "guest";
 
@@ -327,7 +328,7 @@
                 </td>
                 <td>${s.Holder}</td>
                 <td>${s.ScribedBy}</td>
-                <td><span style="font-weight:bold; color:var(--work);">${s.HoursCompleted} hrs</span></td>
+                <td><span style="font-weight:bold; color:var(--work);">${s.HoursCompleted} / ${s.TotalHoursRequired || '-'} hrs</span></td>
                 <td>
                     <div class="inline-action">
                         <input type="number" id="hours-${s.ID}" value="${s.HoursCompleted}" min="0">
@@ -353,7 +354,8 @@
             holder: document.getElementById('holder').value,
             scribedBy: document.getElementById('scribedBy').value,
             status: document.getElementById('initialStatus').value,
-            hoursCompleted: parseInt(document.getElementById('initialHours').value) || 0
+            hoursCompleted: parseInt(document.getElementById('initialHours').value) || 0,
+            totalHoursRequired: parseInt(document.getElementById('totalHoursRequired').value) || 0
         };
 
         this.reset();
