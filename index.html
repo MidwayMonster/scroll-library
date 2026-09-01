@@ -1,33 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> # test
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Arcane Scroll Repository</title>
+
+    <!-- iOS Home Screen App Configurations -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Scroll Ledger">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #8a2be2; --text: #e0e0e0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #8a2be2;
+            --accent-soft: #ba7fff;
+            --text: #e0e0e0;
+            --muted: #999;
+            --work: #d2691e;
+            --danger: #ff6b6b;
+            --line: #333;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+
         .container { max-width: 1000px; margin: 0 auto; }
-        .auth-panel, .dm-panel, .player-panel { background: var(--panel); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+        h2 { margin: 0 0 16px; }
+
+        .panel {
+            background: var(--panel);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--line);
+        }
+        .panel h3 { margin-top: 0; }
         .hidden { display: none !important; }
-        input, select, button { background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 10px; margin: 5px 0; border-radius: 4px; box-sizing: border-box; }
-        input:focus { border-color: var(--accent); outline: none; }
-        button { background: var(--accent); font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+
+        input, select, button {
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 16px; /* prevents iOS zoom-on-focus */
+            font-family: inherit;
+        }
+        input:focus, select:focus { border-color: var(--accent); outline: none; }
+        button { background: var(--accent); font-weight: 600; cursor: pointer; border: none; }
         button:hover { background: #a043ff; }
+
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-        
-        .player-card { background: #1a1a1a; margin: 10px 0; border-radius: 6px; overflow: hidden; border-left: 4px solid var(--accent); }
-        .player-header { background: #252525; padding: 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-        .player-content { padding: 15px; background: #161616; }
-        
+        .form-grid .full-width { grid-column: 1 / -1; }
+
+        /* ---------- Panel headers ---------- */
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .panel-head h3 { margin: 0; }
+        .head-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .toggle-label {
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-label input { width: auto; margin: 0; }
+        .btn-subtle { background: #333; font-size: 0.85em; padding: 8px 12px; }
+        .btn-subtle:hover { background: #444; }
+
+        /* ---------- Player roster ---------- */
+        .player-card {
+            background: #1a1a1a;
+            margin: 12px 0;
+            border-radius: 6px;
+            overflow: hidden;
+            border-left: 4px solid var(--accent);
+        }
+        .player-header {
+            background: #252525;
+            padding: 14px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+        .player-content { padding: 4px 15px 15px; background: #161616; }
+
+        .spell-group { margin: 18px 0 0; border-top: 1px solid var(--line); padding-top: 12px; }
+        .spell-group:first-child { border-top: none; }
+        .spell-title { color: var(--accent-soft); font-size: 1.05em; font-weight: 600; }
+        .spell-group.spent .spell-title { color: var(--danger); text-decoration: line-through; }
+        .spell-group.spent { opacity: 0.7; }
+
+        .badge { background: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; white-space: nowrap; }
+        .badge.accent { background: var(--accent); }
+        .badge.spent { background: #8b0000; }
+        .lvl-badge { background: #4b0082; padding: 2px 7px; border-radius: 4px; font-size: 0.8em; }
+        .spell-group.spent .lvl-badge { background: #555; }
+
+        /* ---------- Tables ----------
+           Auto layout + horizontal scroll only when genuinely needed.
+           No fixed column widths / no nowrap clipping (that was what broke the old UI). */
         .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95em; min-width: 500px; }
-        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
-        th { background: #222; color: var(--accent); }
-        .badge { background: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; }
-        .lvl-badge { background: #4b0082; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; }
-        .btn-consume { background: #b22222; font-size: 0.85em; padding: 5px 10px; color: #fff; border: none; border-radius: 4px; cursor: pointer;}
+        table { width: 100%; border-collapse: collapse; font-size: 0.92em; table-layout: auto; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+        th { background: #222; color: var(--accent); font-weight: 600; white-space: nowrap; }
+        td.numeric, th.numeric { white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: none; }
+        .empty-row td { color: var(--muted); text-align: center; padding: 20px; }
+
+        .btn-consume { background: #b22222; font-size: 0.85em; padding: 7px 12px; }
         .btn-consume:hover { background: #ff4500; }
+        .consumed-date { color: var(--danger); font-weight: 600; }
+        .scribed-by { color: #aaa; }
+
+        .archive-heading {
+            color: var(--danger);
+            margin: 26px 0 0;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 6px;
+            font-size: 1em;
+        }
+
+        /* ---------- Workbench ---------- */
+        #workbenchPanel { border-left: 4px solid var(--work); }
+        #workbenchPanel h3 { color: var(--work); }
+        .wb-spell { font-weight: 600; }
+        .wb-meta { color: var(--muted); font-size: 0.85em; display: block; margin-top: 4px; }
+        .hours-text { font-weight: 600; color: var(--work); white-space: nowrap; }
+        .hours-text.met { color: #66bb6a; }
+        .progress {
+            height: 6px;
+            background: #2a2a2a;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+            min-width: 90px;
+        }
+        .progress > span { display: block; height: 100%; background: var(--work); }
+        .progress.met > span { background: #66bb6a; }
+        .inline-action { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .inline-action input { width: 78px; padding: 7px; font-size: 15px; }
+        .inline-action button { padding: 7px 11px; font-size: 0.85em; }
+        .btn-update { background: #444; }
+        .btn-update:hover { background: #555; }
+        .btn-finish { background: #2e7d32; }
+        .btn-finish:hover { background: #388e3c; }
+
+        .status-msg { color: var(--muted); padding: 8px 0; }
+        .status-msg.error { color: var(--danger); }
+
+        /* ---------- Mobile: stack table rows into labelled cards ---------- */
+        @media (max-width: 680px) {
+            body { padding: 12px; }
+            .panel { padding: 14px; }
+            .player-content { padding: 4px 12px 12px; }
+            .table-wrapper { overflow-x: visible; }
+            table { font-size: 0.95em; }
+            thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+            table, tbody, tr, td { display: block; width: 100%; }
+            tr {
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                margin-bottom: 10px;
+                padding: 4px 10px;
+                background: #1c1c1c;
+            }
+            td {
+                border-bottom: 1px solid #2a2a2a;
+                padding: 8px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+            tr td:last-child { border-bottom: none; }
+            td::before {
+                content: attr(data-label);
+                color: var(--accent);
+                font-weight: 600;
+                font-size: 0.85em;
+                flex: 0 0 auto;
+            }
+            td > * { text-align: right; }
+            .empty-row td { justify-content: center; }
+            .empty-row td::before { content: none; }
+            td.stacked { display: block; }
+            td.stacked::before { display: block; margin-bottom: 6px; }
+            td.stacked > * { text-align: left; }
+            .inline-action { justify-content: flex-end; }
+        }
     </style>
 </head>
 <body>
@@ -35,203 +218,473 @@
     <h2>📜 Arcane Scroll Ledger</h2>
 
     <!-- Password Gateway -->
-    <div id="authPanel" class="auth-panel">
+    <div id="authPanel" class="panel">
         <h3>Enter Access Cipher</h3>
-        <input type="password" id="passphrase" placeholder="Enter password...">
-        <button onclick="authenticate()">Unlock Vault</button>
-        <p id="authError" style="color: #ff6b6b; font-size: 0.9em;"></p>
+        <form id="authForm" class="inline-action">
+            <input type="password" id="passphrase" placeholder="Enter password..." autocomplete="current-password">
+            <button type="submit">Unlock Vault</button>
+        </form>
+        <p id="authError" class="status-msg"></p>
     </div>
 
-    <!-- DM Scribing & Management Module -->
-    <div id="dmPanel" class="dm-panel hidden">
+    <!-- DM Scribing & Manifestation Module -->
+    <div id="dmPanel" class="panel hidden">
         <h3>✨ Scribe New Scroll (DM Vault Access)</h3>
         <form id="scribeForm" class="form-grid">
             <input type="text" id="spell" placeholder="Spell Name" required>
             <input type="text" id="spellLevel" placeholder="Spell Level (e.g. 3rd)" required>
-            <input type="text" id="saveDC" placeholder="Save DC (e.g. 15)" required>
-            <input type="text" id="attackBonus" placeholder="Attack Bonus (e.g. +7)" required>
-            <input type="text" id="castingModifier" placeholder="Casting Modifier (e.g. Int +4)" required>
-            <input type="text" id="holder" placeholder="Assign to Player" required>
+            <input type="text" id="saveDC" placeholder="Save DC (e.g. 15)">
+            <input type="text" id="attackBonus" placeholder="Attack Bonus (e.g. +7)">
+            <input type="text" id="castingModifier" placeholder="Casting Modifier (e.g. Int +4)">
+            <input type="text" id="holder" placeholder="Assigned To (Player)" required>
             <input type="text" id="scribedBy" placeholder="Scribed By (Creator)" required>
-            <button type="submit" style="grid-column: 1 / -1; margin-top: 10px;">Log Manifestation</button>
+            <select id="initialStatus">
+                <option value="Ready">Status: Ready (Completed)</option>
+                <option value="In Progress">Status: Scribing In Progress</option>
+            </select>
+            <input type="number" id="initialHours" placeholder="Hours Completed" value="0" min="0">
+            <input type="number" id="totalHoursRequired" placeholder="Total Hours Required" value="8" min="0">
+            <button type="submit" class="full-width">Log Manifestation</button>
         </form>
     </div>
 
-    <!-- Main Output / Filter Views -->
-    <div id="inventoryPanel" class="player-panel hidden">
-        <div style="display:flex; justify-content: space-between; align-items: center;">
-            <h3>Current Scroll Distributions</h3>
-            <button onclick="fetchData()" style="font-size:0.8em; background:#333;">🔄 Refresh Data</button>
+    <!-- DM-Only Downtime Workbench Tool -->
+    <div id="workbenchPanel" class="panel hidden">
+        <h3>🛠️ Scribing Workbench (In-Progress Logs)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spell Details</th>
+                        <th>Assigned To</th>
+                        <th>Scribed By</th>
+                        <th>Logged Hours</th>
+                        <th>Manage Progress</th>
+                    </tr>
+                </thead>
+                <tbody id="workbenchTableBody">
+                    <tr class="empty-row"><td colspan="5">No unfinished projects currently queued.</td></tr>
+                </tbody>
+            </table>
         </div>
-        <div id="playerRoster">Loading ledger records...</div>
+    </div>
+
+    <!-- Main Output / Filter Views -->
+    <div id="inventoryPanel" class="panel hidden">
+        <div class="panel-head">
+            <h3>Current Party Inventory</h3>
+            <div class="head-tools">
+                <label class="toggle-label">
+                    <input type="checkbox" id="toggleConsumedView"> 👀 Show Spent History
+                </label>
+                <button type="button" class="btn-subtle" id="refreshBtn">🔄 Refresh Data</button>
+                <button type="button" class="btn-subtle" id="lockBtn">🔒 Lock</button>
+            </div>
+        </div>
+        <div id="playerRoster" class="status-msg">Loading ledger records...</div>
     </div>
 </div>
 
 <script>
-    // UPDATE THIS WITH YOUR NEW DEPLOYMENT URL FROM APPS SCRIPT
-    const API_URL = "https://script.google.com/macros/s/AKfycbwVNaXSGFzWdGu-JN48aJi0aaDyTxT6Gwt-WUzQL8qRo02FO-S3t3cVkry0LkPuKOmAdA/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycby53bA52CAEt7EVW6PGCXsYkQh08Hw0OX_pS4yfrex-1XLQyZEIUwernMEARjgEsrB5Iw/exec";
+
+    const STATUS_READY = "ready";
+    const STATUS_IN_PROGRESS = "in progress";
+    const STATUS_CONSUMED = "consumed";
+
+    // No passwords live here. The Apps Script backend validates the key against Script Properties.
+    const KEY_STORAGE = "scrollLedgerKey";
+
     let globalScrollsCache = [];
     let currentRole = "guest";
+    let accessKey = "";
 
-    function authenticate() {
-        const pass = document.getElementById('passphrase').value;
+    /* ---------- helpers ---------- */
+
+    function esc(value) {
+        if (value === null || value === undefined) return "";
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // Blank-safe display value.
+    function val(value) {
+        const s = value === null || value === undefined ? "" : String(value).trim();
+        return s === "" ? "—" : esc(s);
+    }
+
+    function statusOf(scroll) {
+        return String(scroll.Status || "").trim().toLowerCase();
+    }
+
+    // Sheet dates arrive either as ISO strings (real Date cells) or plain text.
+    function formatDate(value) {
+        if (value === null || value === undefined || String(value).trim() === "") return "—";
+        const parsed = new Date(value);
+        if (!isNaN(parsed.getTime())) return esc(parsed.toLocaleDateString());
+        return esc(String(value).trim());
+    }
+
+    function num(value) {
+        const n = parseInt(value, 10);
+        return isNaN(n) ? 0 : n;
+    }
+
+    /* ---------- auth ---------- */
+
+    document.getElementById('authForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const input = document.getElementById('passphrase');
         const err = document.getElementById('authError');
-        
-        if (pass === "player123") {
-            currentRole = "player";
-            initializeView();
-        } else if (pass === "dm456") {
-            currentRole = "dm";
-            initializeView();
+        const submitBtn = this.querySelector('button');
+
+        err.className = "status-msg";
+        err.textContent = "Verifying with the vault...";
+        submitBtn.disabled = true;
+
+        const failure = await unlock(input.value);
+
+        submitBtn.disabled = false;
+        if (failure) {
+            err.className = "status-msg error";
+            err.textContent = failure;
         } else {
-            err.textContent = "Invalid cipher string. Try again.";
+            input.value = "";
+            err.textContent = "";
+        }
+    });
+
+    // Returns null on success, or a message to display.
+    async function unlock(key) {
+        if (!key) return "Enter your access cipher.";
+        try {
+            const response = await fetch(API_URL + "?key=" + encodeURIComponent(key));
+            const payload = await response.json();
+
+            if (payload && payload.error) {
+                return payload.error === "unauthorized"
+                    ? "Invalid cipher string. Try again."
+                    : payload.error;
+            }
+            if (!payload || !payload.role) return "Unexpected response from the vault.";
+
+            accessKey = key;
+            currentRole = payload.role;
+            globalScrollsCache = payload.scrolls || [];
+            try { sessionStorage.setItem(KEY_STORAGE, key); } catch (_) { /* private mode */ }
+
+            showApp();
+            renderAll();
+            return null;
+        } catch (e) {
+            return "Could not reach the vault: " + e.message;
         }
     }
 
-    function initializeView() {
+    function showApp() {
         document.getElementById('authPanel').classList.add('hidden');
         document.getElementById('inventoryPanel').classList.remove('hidden');
-        if (currentRole === 'dm') {
-            document.getElementById('dmPanel').classList.remove('hidden');
-        }
-        fetchData();
+        document.getElementById('dmPanel').classList.toggle('hidden', currentRole !== 'dm');
+        document.getElementById('workbenchPanel').classList.toggle('hidden', currentRole !== 'dm');
+    }
+
+    function lock() {
+        try { sessionStorage.removeItem(KEY_STORAGE); } catch (_) { /* private mode */ }
+        location.reload();
+    }
+
+    /* ---------- data ---------- */
+
+    function renderAll() {
+        renderInventory();
+        if (currentRole === 'dm') renderWorkbench();
     }
 
     async function fetchData() {
-        try {
-            document.getElementById('playerRoster').innerHTML = "Reading master ledger files...";
-            const response = await fetch(API_URL);
-            globalScrollsCache = await response.json();
-            renderInventory();
-        } catch (e) {
-            document.getElementById('playerRoster').innerHTML = "Error accessing ledger data storage.";
-        }
-    }
-
-    function renderInventory() {
         const roster = document.getElementById('playerRoster');
-        roster.innerHTML = "";
-
-        const filtered = globalScrollsCache.filter(s => s.Consumed === "No");
-        const playerMap = {};
-
-        filtered.forEach(s => {
-            if (!playerMap[s.Holder]) playerMap[s.Holder] = {};
-            if (!playerMap[s.Holder][s.Spell]) playerMap[s.Holder][s.Spell] = [];
-            playerMap[s.Holder][s.Spell].push(s);
-        });
-
-        if (Object.keys(playerMap).length === 0) {
-            roster.innerHTML = "<p>No active magical scrolls found across party configurations.</p>";
-            return;
+        roster.className = "status-msg";
+        roster.textContent = "Reading master ledger files...";
+        if (currentRole === 'dm') {
+            document.getElementById('workbenchTableBody').innerHTML =
+                "<tr class='empty-row'><td colspan='5'>Syncing workbench...</td></tr>";
         }
 
-        for (let player in playerMap) {
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
-
-            let totalScrolls = 0;
-            let summaryHTML = "";
-
-            for (let spell in playerMap[player]) {
-                const count = playerMap[player][spell].length;
-                totalScrolls += count;
-                const sampleInstance = playerMap[player][spell][0];
-                const displayLevel = sampleInstance ? sampleInstance.SpellLevel : '—';
-                
-                summaryHTML += `
-                    <div style="margin: 15px 0; border-top: 1px solid #333; padding-top:10px;">
-                        <strong style="color:#ba7fff; font-size:1.1em;">${spell}</strong> 
-                        <span class="lvl-badge">Lvl ${displayLevel}</span>
-                        <span class="badge" style="margin-left:5px;">${count} available</span>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Save DC</th>
-                                    <th>Attack Bonus</th>
-                                    <th>Casting Mod</th>
-                                    <th>Scribed By</th>
-                                    <th>Creation Date</th>
-                                    ${currentRole === 'dm' ? '<th>Action</th>' : ''}
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                playerMap[player][spell].forEach(instance => {
-                    summaryHTML += `
-                        <tr>
-                            <td>${instance.SaveDC || '—'}</td>
-                            <td>${instance.AttackBonus || '—'}</td>
-                            <td>${instance.CastingModifier || '—'}</td>
-                            <td><span style="color:#aaa;">${instance.ScribedBy || 'Unknown'}</span></td>
-                            <td>${instance.Date}</td>
-                            ${currentRole === 'dm' ? `<td><button class="btn-consume" onclick="consumeScroll('${instance.ID}')">Mark Used</button></td>` : ''}
-                        </tr>
-                    `;
-                });
-
-                summaryHTML += `</tbody></table></div>`;
-            }
-
-            playerCard.innerHTML = `
-                <div class="player-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    <span>👤 ${player}</span>
-                    <span><span class="badge" style="background:var(--accent);">${totalScrolls} Total Scrolls</span> ▾</span>
-                </div>
-                <div class="player-content hidden">
-                    ${summaryHTML}
-                </div>
-            `;
-            roster.appendChild(playerCard);
-        }
-    }
-
-    document.getElementById('scribeForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const payload = {
-            action: "create",
-            id: Date.now().toString(),
-            spell: document.getElementById('spell').value,
-            spellLevel: document.getElementById('spellLevel').value,
-            saveDC: document.getElementById('saveDC').value,
-            attackBonus: document.getElementById('attackBonus').value,
-            castingModifier: document.getElementById('castingModifier').value,
-            holder: document.getElementById('holder').value,
-            scribedBy: document.getElementById('scribedBy').value
-        };
-
-        this.reset();
-        await sendPayload(payload);
-    });
-
-    async function consumeScroll(id) {
-        if(confirm("Confirm scroll resource consumption?")) {
-            await sendPayload({ action: "consume", id: id.toString() });
-        }
-    }
-    
-    async function sendPayload(payload) {
-        document.getElementById('playerRoster').innerHTML = "Updating master ledger files...";
         try {
-            await fetch(API_URL, {
+            const response = await fetch(API_URL + "?key=" + encodeURIComponent(accessKey));
+            const payload = await response.json();
+            if (payload && payload.error) throw new Error(payload.error);
+            if (!payload || !Array.isArray(payload.scrolls)) throw new Error("Unexpected response");
+
+            globalScrollsCache = payload.scrolls;
+            currentRole = payload.role || currentRole;
+            renderAll();
+        } catch (e) {
+            roster.className = "status-msg error";
+            roster.textContent = "Error accessing ledger data storage: " + e.message;
+        }
+    }
+
+    async function sendPayload(payload) {
+        payload.key = accessKey;
+        try {
+            const response = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify(payload)
             });
-            fetchData();
+            let result = null;
+            try { result = await response.json(); } catch (_) { /* non-JSON body */ }
+            if (result && result.error) alert("Rejected by the vault: " + result.error);
         } catch (e) {
-            alert("Submission error. Check web deployment configuration permissions.");
-            fetchData();
+            alert("Network submission timeout. Verify active Web Deployment rules.");
         }
-    }
-    
-    async function consumeScroll(id) {
-        if(confirm("Confirm scroll resource consumption?")) {
-            await sendPayload({ action: "consume", id: id.toString() });
-        }
+        await fetchData();
     }
 
+    /* ---------- inventory rendering ---------- */
+
+    function renderInventory() {
+        const roster = document.getElementById('playerRoster');
+        roster.className = "";
+        roster.innerHTML = "";
+
+        const showConsumed = document.getElementById('toggleConsumedView').checked;
+
+        const visible = globalScrollsCache.filter(s => {
+            const st = statusOf(s);
+            return st === STATUS_READY || (showConsumed && st === STATUS_CONSUMED);
+        });
+
+        const playerMap = {};
+        visible.forEach(s => {
+            const holder = String(s.Holder || "Unassigned").trim() || "Unassigned";
+            const spell = String(s.Spell || "Unknown Spell").trim() || "Unknown Spell";
+            if (!playerMap[holder]) playerMap[holder] = {};
+            if (!playerMap[holder][spell]) playerMap[holder][spell] = [];
+            playerMap[holder][spell].push(s);
+        });
+
+        const players = Object.keys(playerMap).sort();
+        if (players.length === 0) {
+            roster.className = "status-msg";
+            roster.textContent = "No matching magical scrolls found across party configurations.";
+            return;
+        }
+
+        players.forEach(player => {
+            const spells = Object.keys(playerMap[player]).sort();
+            let activeCount = 0;
+            let activeHTML = "";
+            let spentHTML = "";
+
+            spells.forEach(spell => {
+                const instances = playerMap[player][spell];
+                const active = instances.filter(i => statusOf(i) === STATUS_READY);
+                const spent = instances.filter(i => statusOf(i) === STATUS_CONSUMED);
+                activeCount += active.length;
+
+                if (active.length > 0) activeHTML += buildActiveGroup(spell, active);
+                if (showConsumed && spent.length > 0) spentHTML += buildSpentGroup(spell, spent);
+            });
+
+            let content = activeHTML;
+            if (spentHTML) {
+                content += `<h4 class="archive-heading">📜 Spent Magic Archive</h4>` + spentHTML;
+            }
+            if (!content) {
+                content = `<p class="status-msg">No active or consumed scrolls logged for this adventurer.</p>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.innerHTML = `
+                <div class="player-header">
+                    <span>👤 ${esc(player)}</span>
+                    <span><span class="badge accent">${activeCount} Active</span> ▾</span>
+                </div>
+                <div class="player-content hidden">${content}</div>
+            `;
+            card.querySelector('.player-header').addEventListener('click', function () {
+                this.nextElementSibling.classList.toggle('hidden');
+            });
+            roster.appendChild(card);
+        });
+    }
+
+    function buildActiveGroup(spell, instances) {
+        const rows = instances.map(i => `
+            <tr>
+                <td class="numeric" data-label="Save DC">${val(i.SaveDC)}</td>
+                <td class="numeric" data-label="Attack Bonus">${val(i.AttackBonus)}</td>
+                <td data-label="Casting Mod">${val(i.CastingModifier)}</td>
+                <td data-label="Scribed By"><span class="scribed-by">${val(i.ScribedBy)}</span></td>
+                <td class="numeric" data-label="Scribed Date">${formatDate(i.CreatedDate)}</td>
+                ${currentRole === 'dm' ? `<td data-label="Action"><button type="button" class="btn-consume" data-action="consume" data-id="${esc(i.ID)}">Mark Used</button></td>` : ''}
+            </tr>
+        `).join("");
+
+        return `
+            <div class="spell-group">
+                <span class="spell-title">${esc(spell)}</span>
+                <span class="lvl-badge">Lvl ${val(instances[0].SpellLevel)}</span>
+                <span class="badge">${instances.length} available</span>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="numeric">Save DC</th>
+                                <th class="numeric">Attack Bonus</th>
+                                <th>Casting Mod</th>
+                                <th>Scribed By</th>
+                                <th class="numeric">Scribed Date</th>
+                                ${currentRole === 'dm' ? '<th>Action</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildSpentGroup(spell, instances) {
+        const rows = instances.map(i => `
+            <tr>
+                <td class="numeric" data-label="Save DC">${val(i.SaveDC)}</td>
+                <td class="numeric" data-label="Attack Bonus">${val(i.AttackBonus)}</td>
+                <td data-label="Scribed By"><span class="scribed-by">${val(i.ScribedBy)}</span></td>
+                <td class="numeric" data-label="Scribed Date">${formatDate(i.CreatedDate)}</td>
+                <td class="numeric" data-label="Consumed Date"><span class="consumed-date">${formatDate(i.ConsumedDate)}</span></td>
+            </tr>
+        `).join("");
+
+        return `
+            <div class="spell-group spent">
+                <span class="spell-title">${esc(spell)}</span>
+                <span class="lvl-badge">Lvl ${val(instances[0].SpellLevel)}</span>
+                <span class="badge spent">${instances.length} Used</span>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="numeric">Save DC</th>
+                                <th class="numeric">Attack Bonus</th>
+                                <th>Scribed By</th>
+                                <th class="numeric">Scribed Date</th>
+                                <th class="numeric">Consumed Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    /* ---------- workbench rendering ---------- */
+
+    function renderWorkbench() {
+        const tbody = document.getElementById('workbenchTableBody');
+        const inProgress = globalScrollsCache.filter(s => statusOf(s) === STATUS_IN_PROGRESS);
+
+        if (inProgress.length === 0) {
+            tbody.innerHTML = "<tr class='empty-row'><td colspan='5'>No active downtime scribing operations found.</td></tr>";
+            return;
+        }
+
+        tbody.innerHTML = inProgress.map(s => {
+            const done = num(s.HoursCompleted);
+            const total = num(s.TotalHoursRequired);
+            const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+            const met = total > 0 && done >= total;
+            const id = esc(s.ID);
+            return `
+                <tr>
+                    <td class="stacked" data-label="Spell Details">
+                        <div>
+                            <span class="wb-spell">${val(s.Spell)}</span>
+                            <span class="lvl-badge">Lvl ${val(s.SpellLevel)}</span>
+                            <span class="wb-meta">DC ${val(s.SaveDC)} | Atk ${val(s.AttackBonus)} | Mod ${val(s.CastingModifier)}</span>
+                        </div>
+                    </td>
+                    <td data-label="Assigned To">${val(s.Holder)}</td>
+                    <td data-label="Scribed By">${val(s.ScribedBy)}</td>
+                    <td data-label="Logged Hours">
+                        <div>
+                            <span class="hours-text${met ? ' met' : ''}">${done} / ${total || '—'} hrs${met ? ' ✔' : ''}</span>
+                            <div class="progress${met ? ' met' : ''}"><span style="width:${pct}%"></span></div>
+                        </div>
+                    </td>
+                    <td data-label="Manage Progress">
+                        <div class="inline-action">
+                            <input type="number" id="hours-${id}" value="${done}" min="0" aria-label="Hours completed">
+                            <button type="button" class="btn-update" data-action="updateHours" data-id="${id}">Update</button>
+                            <button type="button" class="btn-finish" data-action="finish" data-id="${id}">Finish 📜</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    /* ---------- actions (event delegation) ---------- */
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+
+        if (btn.dataset.action === 'consume') {
+            if (confirm("Confirm scroll resource consumption?")) {
+                sendPayload({ action: "consume", id: id });
+            }
+        } else if (btn.dataset.action === 'updateHours') {
+            const input = document.getElementById('hours-' + id);
+            sendPayload({ action: "updateHours", id: id, hours: num(input && input.value) });
+        } else if (btn.dataset.action === 'finish') {
+            if (confirm("Mark scroll scribing project complete? This releases it to the player inventory view.")) {
+                sendPayload({ action: "completeScribing", id: id });
+            }
+        }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchData);
+    document.getElementById('lockBtn').addEventListener('click', lock);
+    document.getElementById('toggleConsumedView').addEventListener('change', renderInventory);
+
+    document.getElementById('scribeForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const payload = {
+            action: "create",
+            id: Date.now().toString(),
+            spell: document.getElementById('spell').value.trim(),
+            spellLevel: document.getElementById('spellLevel').value.trim(),
+            saveDC: document.getElementById('saveDC').value.trim(),
+            attackBonus: document.getElementById('attackBonus').value.trim(),
+            castingModifier: document.getElementById('castingModifier').value.trim(),
+            holder: document.getElementById('holder').value.trim(),
+            scribedBy: document.getElementById('scribedBy').value.trim(),
+            status: document.getElementById('initialStatus').value,
+            hoursCompleted: num(document.getElementById('initialHours').value),
+            totalHoursRequired: num(document.getElementById('totalHoursRequired').value)
+        };
+
+        this.reset();
+        document.getElementById('initialHours').value = "0";
+        document.getElementById('totalHoursRequired').value = "8";
+        await sendPayload(payload);
+    });
+
+    // Stay signed in across reloads within the same tab session.
+    (async function restoreSession() {
+        let saved = null;
+        try { saved = sessionStorage.getItem(KEY_STORAGE); } catch (_) { /* private mode */ }
+        if (saved) await unlock(saved);
+    })();
 </script>
 </body>
 </html>
