@@ -29,13 +29,20 @@
         
         /* Mobile Touch-Friendly Sliding Layout Rules */
         .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95em; min-width: 650px; }
-        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95em; min-width: 600px; table-layout: fixed; }
+        th, td { padding: 6px 10px; border-bottom: 1px solid #333; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         th { background: #222; color: var(--accent); }
         .badge { background: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; }
         .lvl-badge { background: #4b0082; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; }
         .btn-consume { background: #b22222; font-size: 0.85em; padding: 5px 10px; color: #fff; border: none; border-radius: 4px; cursor: pointer;}
         .btn-consume:hover { background: #ff4500; }
+
+        /* Explicitly assign tight widths so the columns don't run away from the spell name */
+        th:nth-child(1), td:nth-child(1) { width: 15%; } /* Save DC */ 
+        th:nth-child(2), td:nth-child(2) { width: 15%; } /* Attack Bonus */ 
+        th:nth-child(3), td:nth-child(3) { width: 15%; } /* Casting Mod */ 
+        th:nth-child(4), td:nth-child(4) { width: 25%; } /* Scribed By */ 
+        th:nth-child(5), td:nth-child(5) { width: 30%; } /* Scribed Date */
         
         /* Workbench adjustments */
         .workbench-panel { border-left: 4px solid var(--work); }
