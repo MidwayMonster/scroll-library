@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Arcane Scroll Repository</title>
+    <title>Broken Realms &mdash; Arcane Scroll Ledger</title>
 
     <!-- iOS Home Screen App Configurations -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Scroll Ledger">
+    <meta name="apple-mobile-web-app-title" content="Broken Realms">
     <link rel="apple-touch-icon" href="icon.png">
 
     <style>
@@ -36,7 +36,30 @@
         }
 
         .container { max-width: 1000px; margin: 0 auto; }
-        h2 { margin: 0 0 16px; }
+
+        .site-head {
+            text-align: center;
+            margin: 4px 0 22px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+        .site-head h1 {
+            margin: 0;
+            font-size: clamp(1.7rem, 6vw, 2.5rem);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #6a1fb0, var(--accent-soft), #6a1fb0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .site-head .tagline {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
 
         .panel {
             background: var(--panel);
@@ -63,6 +86,11 @@
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
         .form-grid .full-width { grid-column: 1 / -1; }
+
+        /* Auth form gets its own sizing; the workbench .inline-action rules are far too narrow here. */
+        .auth-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 460px; }
+        .auth-form input { flex: 1 1 220px; min-width: 0; }
+        .auth-form button { flex: 0 0 auto; padding: 10px 18px; }
 
         /* ---------- Panel headers ---------- */
         .panel-head {
@@ -215,12 +243,15 @@
 </head>
 <body>
 <div class="container">
-    <h2>📜 Arcane Scroll Ledger</h2>
+    <header class="site-head">
+        <h1>Broken Realms</h1>
+        <p class="tagline">⚜︎ Arcane Scroll Ledger ⚜︎</p>
+    </header>
 
     <!-- Password Gateway -->
     <div id="authPanel" class="panel">
         <h3>Enter Access Cipher</h3>
-        <form id="authForm" class="inline-action">
+        <form id="authForm" class="auth-form">
             <input type="password" id="passphrase" placeholder="Enter password..." autocomplete="current-password">
             <button type="submit">Unlock Vault</button>
         </form>
@@ -358,6 +389,14 @@
         }
     });
 
+    // The pre-auth backend returned a bare array; /exec still serves the old deployed version.
+    function isStaleBackend(payload) {
+        return Array.isArray(payload);
+    }
+
+    const STALE_BACKEND_MSG = "The Apps Script deployment is still running the old code. " +
+        "In the editor: Deploy > Manage deployments > pencil > Version: New version > Deploy.";
+
     // Returns null on success, or a message to display.
     async function unlock(key) {
         if (!key) return "Enter your access cipher.";
@@ -365,6 +404,7 @@
             const response = await fetch(API_URL + "?key=" + encodeURIComponent(key));
             const payload = await response.json();
 
+            if (isStaleBackend(payload)) return STALE_BACKEND_MSG;
             if (payload && payload.error) {
                 return payload.error === "unauthorized"
                     ? "Invalid cipher string. Try again."
@@ -416,6 +456,7 @@
         try {
             const response = await fetch(API_URL + "?key=" + encodeURIComponent(accessKey));
             const payload = await response.json();
+            if (isStaleBackend(payload)) throw new Error(STALE_BACKEND_MSG);
             if (payload && payload.error) throw new Error(payload.error);
             if (!payload || !Array.isArray(payload.scrolls)) throw new Error("Unexpected response");
 
