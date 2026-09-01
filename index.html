@@ -48,8 +48,9 @@
         <form id="scribeForm" class="form-grid">
             <input type="text" id="spell" placeholder="Spell Name" required>
             <input type="text" id="spellLevel" placeholder="Spell Level (e.g. 3rd)" required>
-            <input type="text" id="attackBonus" placeholder="Attack Bonus (e.g. +7)" required>
             <input type="text" id="saveDC" placeholder="Save DC (e.g. 15)" required>
+            <input type="text" id="attackBonus" placeholder="Attack Bonus (e.g. +7)" required>
+            <input type="text" id="castingModifier" placeholder="Casting Modifier (e.g. Int +4)" required>
             <input type="text" id="holder" placeholder="Assign to Player" required>
             <input type="text" id="scribedBy" placeholder="Scribed By (Creator)" required>
             <button type="submit" style="grid-column: 1 / -1; margin-top: 10px;">Log Manifestation</button>
@@ -146,8 +147,9 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Attack Bonus</th>
                                     <th>Save DC</th>
+                                    <th>Attack Bonus</th>
+                                    <th>Casting Mod</th>
                                     <th>Scribed By</th>
                                     <th>Creation Date</th>
                                     ${currentRole === 'dm' ? '<th>Action</th>' : ''}
@@ -159,8 +161,9 @@
                 playerMap[player][spell].forEach(instance => {
                     summaryHTML += `
                         <tr>
-                            <td>${instance.AttackBonus || '—'}</td>
                             <td>${instance.SaveDC || '—'}</td>
+                            <td>${instance.AttackBonus || '—'}</td>
+                            <td>${instance.CastingModifier || '—'}</td>
                             <td><span style="color:#aaa;">${instance.ScribedBy || 'Unknown'}</span></td>
                             <td>${instance.Date}</td>
                             ${currentRole === 'dm' ? `<td><button class="btn-consume" onclick="consumeScroll('${instance.ID}')">Mark Used</button></td>` : ''}
@@ -191,8 +194,9 @@
             id: Date.now().toString(),
             spell: document.getElementById('spell').value,
             spellLevel: document.getElementById('spellLevel').value,
-            attackBonus: document.getElementById('attackBonus').value,
             saveDC: document.getElementById('saveDC').value,
+            attackBonus: document.getElementById('attackBonus').value,
+            castingModifier: document.getElementById('castingModifier').value,
             holder: document.getElementById('holder').value,
             scribedBy: document.getElementById('scribedBy').value
         };
